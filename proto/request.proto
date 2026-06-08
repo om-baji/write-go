@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package wal.proto;
+
+message AppendRequest {
+  string body = 1;
+  int32 timestamp = 2;
+}
+
+message AppendResponse {
+  int32 success = 1;
+  string message = 2;
+  int32 error = 3;
+}
+
+service AppendService {
+  rpc Append(AppendRequest) returns (AppendResponse);
+}
