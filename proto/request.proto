@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package wal.proto;
+package internal.generated;
 
 message AppendRequest {
   string body = 1;
