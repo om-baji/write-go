@@ -52,7 +52,7 @@ func main() {
 			Body:      payload,
 			Magic:     WAL_MAGIC,
 			Timestamp: time.Now().String(),
-			Seq:       1,
+			Seq:       int64(Seq_No),
 		}
 
 		message := fmt.Sprintf("%#v", entry)

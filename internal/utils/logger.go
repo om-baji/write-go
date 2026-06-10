@@ -41,10 +41,10 @@ func log(level Level, format string, args ...any) {
 		tag = "DEBUG"
 	case INFO:
 		color = green
-		tag = "INFO "
+		tag = "INFO"
 	case WARN:
 		color = yellow
-		tag = "WARN "
+		tag = "WARN"
 	case ERROR:
 		color = red
 		tag = "ERROR"
