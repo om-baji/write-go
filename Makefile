@@ -4,5 +4,8 @@ all:
 server:
 	./server
 
+test:
+	go test -v -count=1 -race ./...
+
 clean:
 	rm -rf cli server
