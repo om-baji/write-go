@@ -1,0 +1,7 @@
+config:
+  path: "./data"
+  segment_size: 64
+  sync_mode: "immediate" # immediate | group
+  checkpoint_interval: 10000000
+  compression: false
+  grpc_port: 50051

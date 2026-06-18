@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/om-baji/write-go/internal"
+	"github.com/om-baji/write-go/internal/config"
 	"github.com/om-baji/write-go/internal/utils"
 )
 
@@ -15,6 +16,8 @@ func init() {
 			"./data/current.log",
 		),
 	)
+
+	config.CheckVars()
 }
 
 const WAL_MAGIC int32 = 0x57414C31
@@ -22,9 +25,9 @@ const WAL_MAGIC int32 = 0x57414C31
 var Seq_No = 1
 
 var CurrentSegment = internal.Segment{
-	Id:   1,
+	Id:   0,
 	Size: 0,
-	Path: "./data/current_0000.log",
+	Path: "./data/wal_segment0.log",
 }
 
 func help() {

@@ -11,5 +11,4 @@ func CheckVars() {
 	if err != nil {
 		utils.HandlExp(err)
 	}
-
 }
