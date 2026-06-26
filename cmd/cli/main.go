@@ -60,7 +60,10 @@ func main() {
 
 		message := fmt.Sprintf("%#v", entry)
 
-		CurrentSegment = utils.AppendFlush(CurrentSegment, message)
+		buffer := utils.NewBuffer(4096)
+
+		CurrentSegment, _ = utils.CommitWorker([]byte(message), buffer, CurrentSegment, 4096)
+		CurrentSegment, _ = utils.FlushBuffer(buffer, CurrentSegment)
 	case "verify":
 		println("This is add command!")
 	case "info":

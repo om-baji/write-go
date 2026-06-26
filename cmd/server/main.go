@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/om-baji/write-go/internal"
@@ -17,10 +20,13 @@ const WAL_MAGIC int32 = 0x57414C31
 
 type AppendServer struct {
 	pb.UnimplementedAppendServiceServer
-	queue *utils.MessageQueue
-	dlq   *utils.DLQueue
-	seq   int64
-	seg   internal.Segment
+	queue     *utils.MessageQueue
+	dlq       *utils.DLQueue
+	buffer    *utils.MemoryBuffer
+	segMu     sync.Mutex
+	seq       int64
+	seg       internal.Segment
+	threshold int
 }
 
 var seqNo int64 = 1
@@ -66,7 +72,13 @@ func (s *AppendServer) processQueue() {
 					s.dlq.Enqueue(msg)
 				}
 			}()
-			s.seg = utils.AppendFlush(s.seg, msg)
+			s.segMu.Lock()
+			seg, err := utils.CommitWorker([]byte(msg), s.buffer, s.seg, s.threshold)
+			if err != nil {
+				panic(err)
+			}
+			s.seg = seg
+			s.segMu.Unlock()
 		}()
 	}
 }
@@ -79,13 +91,34 @@ func (s *AppendServer) processDLQ() {
 					utils.Error("dlq retry failed: %s", msg)
 				}
 			}()
-			s.seg = utils.AppendFlush(s.seg, msg)
+			s.segMu.Lock()
+			seg, err := utils.CommitWorker([]byte(msg), s.buffer, s.seg, s.threshold)
+			if err != nil {
+				panic(err)
+			}
+			s.seg = seg
+			s.segMu.Unlock()
 			preview := msg
 			if len(preview) > 64 {
 				preview = preview[:64]
 			}
 			utils.Info("dlq flush recovered: %s", preview)
 		}()
+	}
+}
+
+func (s *AppendServer) periodicFlush() {
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	for range ticker.C {
+		s.segMu.Lock()
+		seg, err := utils.FlushBuffer(s.buffer, s.seg)
+		if err != nil {
+			utils.Error("periodic flush failed: %v", err)
+		} else {
+			s.seg = seg
+		}
+		s.segMu.Unlock()
 	}
 }
 
@@ -100,6 +133,13 @@ func main() {
 	dlq := &utils.DLQueue{}
 	dlq.Init(256)
 
+	threshold, err := strconv.Atoi(os.Getenv("COMMIT_THRESHOLD"))
+	if err != nil || threshold < 16 {
+		threshold = 4096
+	}
+
+	buffer := utils.NewBuffer(threshold)
+
 	seg := internal.Segment{
 		Id:   1,
 		Size: 0,
@@ -107,13 +147,16 @@ func main() {
 	}
 
 	server := &AppendServer{
-		queue: queue,
-		dlq:   dlq,
-		seg:   seg,
+		queue:     queue,
+		dlq:       dlq,
+		buffer:    buffer,
+		seg:       seg,
+		threshold: threshold,
 	}
 
 	go server.processQueue()
 	go server.processDLQ()
+	go server.periodicFlush()
 
 	lis, err := net.Listen("tcp", ":50051")
 	utils.HandlExp(err)

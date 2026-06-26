@@ -25,6 +25,8 @@ func setupServer(t *testing.T, dir string) *AppendServer {
 	dlq := &utils.DLQueue{}
 	dlq.Init(32)
 
+	buffer := utils.NewBuffer(4096)
+
 	seg := internal.Segment{
 		Id:   1,
 		Size: 0,
@@ -32,9 +34,11 @@ func setupServer(t *testing.T, dir string) *AppendServer {
 	}
 
 	return &AppendServer{
-		queue: queue,
-		dlq:   dlq,
-		seg:   seg,
+		queue:     queue,
+		dlq:       dlq,
+		buffer:    buffer,
+		seg:       seg,
+		threshold: 1,
 	}
 }
 

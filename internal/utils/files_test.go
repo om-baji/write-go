@@ -67,7 +67,11 @@ func TestAppendFlush(t *testing.T) {
 		Path: path,
 	}
 
-	seg = AppendFlush(seg, "first log line")
+	var err error
+	seg, err = AppendFlush(seg, "first log line")
+	if err != nil {
+		t.Fatalf("AppendFlush failed: %v", err)
+	}
 
 	if seg.Size == 0 {
 		t.Error("expected size > 0 after flush")
@@ -81,7 +85,10 @@ func TestAppendFlush(t *testing.T) {
 		t.Error("expected content in file")
 	}
 
-	seg = AppendFlush(seg, "second log line")
+	seg, err = AppendFlush(seg, "second log line")
+	if err != nil {
+		t.Fatalf("second AppendFlush failed: %v", err)
+	}
 	if seg.Size == 0 {
 		t.Error("expected size > 0 after second flush")
 	}
